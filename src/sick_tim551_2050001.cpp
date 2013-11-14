@@ -26,13 +26,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- *  Created on: 24.05.2012
+ *  Created on: 14.11.2013
  *
- *      Authors:
- *         Jochen Sprickerhof <jochen@sprickerhof.de>
+ *      Author:
  *         Martin Günther <mguenthe@uos.de>
- *
- * Based on the TiM communication example by SICK AG.
  *
  */
 
@@ -43,8 +40,8 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "sick_tim551_2050001");
 
-  sick_tim3xx::SickTim551_2050001Parser* parser = new sick_tim3xx::SickTim551_2050001Parser();
-  sick_tim3xx::SickTim3xxCommon s(parser);
+  sick_tim3xx::SickTim5512050001Parser* parser = new sick_tim3xx::SickTim5512050001Parser();
+  sick_tim3xx::SickTim3xxCommon s((sick_tim3xx::AbstractParser*)parser);
 
   int result = s.init_usb();
   while (ros::ok() && (result == EXIT_SUCCESS))

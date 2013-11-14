@@ -26,7 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- *  Created on: 21.08.2013
+ *  Created on: 14.11.2013
  *
  *      Author: Martin Günther <mguenthe@uos.de>
  *
@@ -39,16 +39,16 @@
 namespace sick_tim3xx
 {
 
-SickTim551_2050001Parser::SickTim551_2050001Parser() :
+SickTim5512050001Parser::SickTim5512050001Parser() :
     AbstractParser()
 {
 }
 
-SickTim551_2050001Parser::~SickTim551_2050001Parser()
+SickTim5512050001Parser::~SickTim5512050001Parser()
 {
 }
 
-int SickTim551_2050001Parser::parse_datagram(char* datagram, size_t datagram_length, SickTim3xxConfig &config,
+int SickTim5512050001Parser::parse_datagram(char* datagram, size_t datagram_length, SickTim3xxConfig &config,
                                      sensor_msgs::LaserScan &msg)
 {
   static const size_t NUM_FIELDS = 306;
@@ -65,7 +65,7 @@ int SickTim551_2050001Parser::parse_datagram(char* datagram, size_t datagram_len
   count = 0;
   cur_field = strtok(datagram, " ");
   fields[count] = cur_field;
-  ROS_DEBUG("%zu: %s ", count, fields[count]);
+  // ROS_DEBUG("%zu: %s ", count, fields[count]);
 
   while (cur_field != NULL)
   {
@@ -74,22 +74,22 @@ int SickTim551_2050001Parser::parse_datagram(char* datagram, size_t datagram_len
     if (count <= NUM_FIELDS)
       fields[count] = cur_field;
 
-    ROS_DEBUG("%zu: %s ", count, cur_field);
+    // ROS_DEBUG("%zu: %s ", count, cur_field);
   }
 
   if (count < NUM_FIELDS)
   {
     ROS_WARN(
         "received less fields than expected fields (actual: %zu, expected: %zu), ignoring scan", count, NUM_FIELDS);
-    ROS_WARN("are you using the correct node? (124 --> sick_tim310_1130000m01, 306 --> sick_tim551_205001, 580 --> sick_tim310, 592 --> sick_tim310s01)");
-    ROS_DEBUG("received message was: %s", datagram_copy);
+    ROS_WARN("are you using the correct node? (124 --> sick_tim310_1130000m01, 306 --> sick_tim551_2050001, 580 --> sick_tim310, 592 --> sick_tim310s01)");
+    // ROS_DEBUG("received message was: %s", datagram_copy);
     return EXIT_FAILURE;
   }
   else if (count > NUM_FIELDS)
   {
     ROS_WARN("received more fields than expected (actual: %zu, expected: %zu), ignoring scan", count, NUM_FIELDS);
-    ROS_WARN("are you using the correct node? (124 --> sick_tim310_1130000m01, 306 --> sick_tim551_205001, 580 --> sick_tim310, 592 --> sick_tim310s01)");
-    ROS_DEBUG("received message was: %s", datagram_copy);
+    ROS_WARN("are you using the correct node? (124 --> sick_tim310_1130000m01, 306 --> sick_tim551_2050001, 580 --> sick_tim310, 592 --> sick_tim310s01)");
+    // ROS_DEBUG("received message was: %s", datagram_copy);
     return EXIT_FAILURE;
   }
 
@@ -118,35 +118,34 @@ int SickTim551_2050001Parser::parse_datagram(char* datagram, size_t datagram_len
   unsigned short scanning_freq = -1;
   sscanf(fields[16], "%hx", &scanning_freq);
   msg.scan_time = 1.0 / (scanning_freq / 100.0);
-  ROS_DEBUG("hex: %s, scanning_freq: %d, scan_time: %f", fields[16], scanning_freq, msg.scan_time);
+  // ROS_DEBUG("hex: %s, scanning_freq: %d, scan_time: %f", fields[16], scanning_freq, msg.scan_time);
 
   // 17: Measurement Frequency (36)
-  unsigned short measurement_freq = 36;
-  //sscanf(fields[17], "%hx", &measurement_freq);
+  unsigned short measurement_freq = -1;
+  sscanf(fields[17], "%hx", &measurement_freq);
   msg.time_increment = 1.0 / (measurement_freq * 100.0);
-  ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
+  // ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
 
   // 18: Number of encoders (0)
   // 19: Number of 16 bit channels (1)
-  // FIX: 20/21 missing
-  // 22: Measured data contents (DIST1)
+  // 20: Measured data contents (DIST1)
 
-  // 23: Scaling factor (3F800000)
+  // 21: Scaling factor (3F800000)
   // ignored for now (is always 1.0):
 //      unsigned int scaling_factor_int = -1;
 //      sscanf(fields[21], "%x", &scaling_factor_int);
 //
 //      float scaling_factor = reinterpret_cast<float&>(scaling_factor_int);
-//      ROS_DEBUG("hex: %s, scaling_factor_int: %d, scaling_factor: %f", fields[21], scaling_factor_int, scaling_factor);
+//      // ROS_DEBUG("hex: %s, scaling_factor_int: %d, scaling_factor: %f", fields[21], scaling_factor_int, scaling_factor);
 
-  // 24: Scaling offset (00000000) -- always 0
-  // 25: Starting angle (FFF92230)
+  // 22: Scaling offset (00000000) -- always 0
+  // 23: Starting angle (FFF92230)
   int starting_angle = -1;
   sscanf(fields[23], "%x", &starting_angle);
   msg.angle_min = (starting_angle / 10000.0) / 180.0 * M_PI - M_PI / 2;
-  ROS_INFO("starting_angle: %d, angle_min: %f", starting_angle, msg.angle_min);
+  // ROS_DEBUG("starting_angle: %d, angle_min: %f", starting_angle, msg.angle_min);
 
-  // 26: Angular step width (2710)
+  // 24: Angular step width (2710)
   unsigned short angular_step_width = -1;
   sscanf(fields[24], "%hx", &angular_step_width);
   msg.angle_increment = (angular_step_width / 10000.0) / 180.0 * M_PI;
@@ -168,13 +167,10 @@ int SickTim551_2050001Parser::parse_datagram(char* datagram, size_t datagram_len
     index_max--;
   }
 
-  ROS_INFO("index_min: %d, index_max: %d", index_min, index_max);
-  ROS_INFO("angular_step_width: %d, angle_increment: %f, angle_max: %f", angular_step_width, msg.angle_increment, msg.angle_max);
+  ROS_DEBUG("index_min: %d, index_max: %d", index_min, index_max);
+  // ROS_DEBUG("angular_step_width: %d, angle_increment: %f, angle_max: %f", angular_step_width, msg.angle_increment, msg.angle_max);
 
-  // 27: Number of data (10F)
-  unsigned short num_ranges;
-  sscanf(fields[25], "%hx", &num_ranges);
-  ROS_INFO("num_ranges: %s/%d", fields[25], num_ranges);
+  // 25: Number of data (10F)
 
   // 26..296: Data_1 .. Data_n
   msg.ranges.resize(index_max - index_min + 1);
@@ -185,43 +181,7 @@ int SickTim551_2050001Parser::parse_datagram(char* datagram, size_t datagram_len
     msg.ranges[j - index_min] = range / 1000.0;
   }
 
-  // N/A in Tim551
-  // ---297: Number of 8 bit channels (1)---
-  //    // 299: Measured data contents (RSSI1)
-  //    // 300: Scaling factor (3F800000)
-  //    // 301: Scaling offset (00000000)
-  //    // 302: Starting angle (FFF92230)
-  //    // 303: Angular step width (2710)
-  //    // 304: Number of data (10F)
-  //    // 305..575: Data_1 .. Data_n
-  //    if (config.intensity)
-  //    {
-  //      msg.intensities.resize(index_max - index_min + 1);
-  //      for (int j = index_min; j <= index_max; ++j)
-  //      {
-  //        unsigned short intensity;
-  //        sscanf(fields[j + 305], "%hx", &intensity);
-  //        msg.intensities[j - index_min] = intensity;
-  //      }
-  //    }
-  //
-  //    // 576: Position (0)
-  //    // 577: Name (0)
-  //    // 578: Comment (0)
-  //    // 579: Time information (0)
-  //    // 579: Event information (0)
-
-
-  // undocumented for now guesses:
-  // 297: 0
-  // 298: 0
-  // 299: 1
-  // 300: B
-  // 301: (not)
-  // 302: (defined)
-  // 303: Comment (0)
-  // 304: Time information (0)
-  // 305: Event information (0)
+  // 297-305: unknown
   // <ETX> (\x03)
 
   msg.range_min = 0.05;
